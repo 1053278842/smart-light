@@ -1,3 +1,4 @@
-idf_component_register(SRCS "wifi_connect.c"
-                       PRIV_REQUIRES esp_wifi nvs_flash esp_http_server
+idf_component_register(SRCS "app_main.c"
+                       PRIV_REQUIRES esp_wifi nvs_flash 
+                       REQUIRES wifi_manager wifi_nvs http_wifi
                        INCLUDE_DIRS "")
