@@ -1,53 +1,23 @@
-| Supported Targets | ESP32 | ESP32-C2 | ESP32-C3 | ESP32-C5 | ESP32-C6 | ESP32-C61 | ESP32-H2 | ESP32-H21 | ESP32-H4 | ESP32-P4 | ESP32-S2 | ESP32-S3 | Linux |
-| ----------------- | ----- | -------- | -------- | -------- | -------- | --------- | -------- | --------- | -------- | -------- | -------- | -------- | ----- |
+| Supported Targets | ESP32 |
+# 前言
 
-# Hello World Example
+你好，这是一个基于ESP-IDF框架实现的手动WIFI装配的程序，可运行在ESP32芯片中。
 
-Starts a FreeRTOS task to print "Hello World".
+## 功能点
 
-(See the README.md file in the upper level 'examples' directory for more information about examples.)
+本用例采用AP/Station WIFI + HTTP + NVS + GPIO等 初步实现Wifi配置。
 
-## How to use example
-
-Follow detailed instructions provided specifically for this example.
-
-Select the instructions depending on Espressif chip installed on your development board:
-
-- [ESP32 Getting Started Guide](https://docs.espressif.com/projects/esp-idf/en/stable/get-started/index.html)
-- [ESP32-S2 Getting Started Guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/get-started/index.html)
+- WIFI: 同时开启AP（本机热点）+Station(正常WIFI)，AP用于手动连接配网，配网成功后自动关闭。
+- HTTP: 通过Web程序，可以和esp设备连接到同一局域网中，通过192.168.4.1/config?ssid=xx&password=xx接口传输凭证
+- NVS: 启用NVS存储WIFI凭证
+- GPIO灯: 即板载灯，本项目GPIO为2，可自行根据GPIO定义修改。
 
 
-## Example folder contents
-
-The project **hello_world** contains one source file in C language [hello_world_main.c](main/hello_world_main.c). The file is located in folder [main](main).
-
-ESP-IDF projects are built using CMake. The project build configuration is contained in `CMakeLists.txt` files that provide set of directives and instructions describing the project's source files and targets (executable, library, or both).
-
-Below is short explanation of remaining files in the project folder.
-
-```
-├── CMakeLists.txt
-├── pytest_hello_world.py      Python script used for automated testing
-├── main
-│   ├── CMakeLists.txt
-│   └── hello_world_main.c
-└── README.md                  This is the file you are currently reading
-```
-
-For more information on structure and contents of ESP-IDF projects, please refer to Section [Build System](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/build-system.html) of the ESP-IDF Programming Guide.
-
-## Troubleshooting
-
-* Program upload failure
-
-    * Hardware connection is not correct: run `idf.py -p PORT monitor`, and reboot your board to see if there are any output logs.
-    * The baud rate for downloading is too high: lower your baud rate in the `menuconfig` menu, and try again.
-
-## Technical support and feedback
-
-Please use the following feedback channels:
-
-* For technical queries, go to the [esp32.com](https://esp32.com/) forum
-* For a feature request or bug report, create a [GitHub issue](https://github.com/espressif/esp-idf/issues)
-
-We will get back to you as soon as possible.
+## 事件描述
+本用例中存在多个组件的事件定义，统一由`app_main.c`程序调度。
+- `WIFI_MANAGER_CONNECTED_SUCCESS`
+    即WIFI连接成功、已获取到IP地址，代表配网成功
+- `WIFI_MANAGER_CONNECTED_FAIL`
+    即WIFI配网失败，如WIFI凭证错误导致的连接失败
+- `HTTP_RECIVE_SSID`
+    即收到配置接口的请求
