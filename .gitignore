@@ -1,3 +1,4 @@
 .devcontainer
 .vscode
 build
+components/mqtt_ssl/mqtt_ssl_config.h

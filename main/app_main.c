@@ -15,6 +15,7 @@
 #include "wifi_manager.h"
 #include "wifi_nvs.h"
 #include "board_light.h"
+#include "mqtt_ssl.h"
 
 static const char *TAG = "wifi_connect";
 
@@ -39,10 +40,13 @@ static void event_handler(void *handler_arg,
             wifi_manager_nvs_save(&info);               // 保存成功凭证
             board_light_off();                          // 连接成功，熄灭
             ESP_LOGI(TAG, "WiFi 连接成功!存储本次凭证,关闭WEB服务,关闭AP WIFI模式,关闭指示灯");
+            ESP_LOGI(TAG, "开启 MQTT 任务");
+            start_mqtt_ssl(); // 启动 MQTT 任务
             break;
 
         case WIFI_MANAGER_CONNECTED_FAIL:
             ESP_LOGI(TAG, "WiFi 连接失败事件收到");
+            stop_mqtt_ssl();               // 停止MQTT客户端，释放资源
             ESP_LOGI(TAG, "启动 Web 服务器，等待新的 WiFi 凭证");
             http_wifi_web_init(&service); // 启动http,准备接受参数重新配网
             // wifi_manager_nvs_clear();     // 清除已接收凭证
@@ -62,6 +66,7 @@ static void event_handler(void *handler_arg,
             board_light_blink(500);                               // 快速闪烁，表示正在连接
             wifi_manager_connect_sta(data->ssid, data->password); // 尝试连接新的密码
             info = *data;                                         // 保存到全局变量
+            free(data);                                           // 释放事件数据内存
             break;
         }
     }

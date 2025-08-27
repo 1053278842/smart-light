@@ -37,6 +37,8 @@ void board_light_on(void)
 static void board_light_blink_task(void *param)
 {
     int delay_ms = *(int *)param;
+    free(param); // 释放传入的参数内存
+    
     while (1)
     {
         gpio_set_level(BLINK_GPIO, 1);
