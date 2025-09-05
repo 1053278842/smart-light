@@ -1,4 +1,3 @@
-| Supported Targets | ESP32 |
 # 前言
 
 你好，这是一个基于ESP-IDF框架实现的mqtt远程亮灯程序，可运行在ESP32芯片中。
