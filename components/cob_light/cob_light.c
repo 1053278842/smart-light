@@ -46,6 +46,9 @@ void cob_light_init(cob_light_t *light, int gpio_num, int channel)
     light->freq_hz = LEDC_FREQ;
     light->task = NULL;
     light->stop_flag = false;
+    light->phase = 0.0f;
+    light->speed_multiplier = 1.0f; // 默认倍率 1
+
     reset_duty_range(light, 0, 100);
 
     ledc_timer_config_t timer_conf = {
@@ -95,11 +98,16 @@ static void breath_task(void *param)
     cob_light_t *light = (cob_light_t *)param;
     light->stop_flag = false;
     float t = 0;
+    float speed = 0.05f; // 小 = 慢，大 = 快
     while (!light->stop_flag)
     {
-        int duty = duty_in_range(light, (sin(t) + 1) / 2); // 归一化到 0~1
+        float norm = (sin(t + light->phase) + 1) / 2;
+        int duty = duty_in_range(light, norm); // 归一化到 0~1
         set_duty(light, duty);
-        t += 0.05;
+        float step = speed * light->speed_multiplier;
+        if (norm > 0.95f || norm < 0.05f)
+            step *= 0.2f; // 峰值区域慢
+        t += step;
         vTaskDelay(pdMS_TO_TICKS(20));
     }
     set_duty(light, 0);
@@ -114,10 +122,11 @@ static void wave_task(void *param)
     float t = 0;
     while (!light->stop_flag)
     {
-        int duty = duty_in_range(light, (sin(t) + sin(t * 1.5) + 2) / 4); // 结果已在 0~1 范围
-
+        float norm = (sin(t + light->phase) + sin((t + light->phase) * 1.5) + 2) / 4;
+        int duty = duty_in_range(light, norm);
         set_duty(light, duty);
-        t += 0.1;
+        float step = 0.1f * light->speed_multiplier;
+        t += step;
         vTaskDelay(pdMS_TO_TICKS(30));
     }
     set_duty(light, 0);
@@ -151,17 +160,19 @@ static void fade_task(void *param)
     {
         for (int i = 0; i <= steps && !light->stop_flag; i++)
         {
-            int duty = duty_in_range(light, (float)i / steps); // i 在 0~steps，归一化到 0~1
-
+            float norm = fmodf((float)i / steps + light->phase, 1.0f);
+            int duty = duty_in_range(light, norm);
             set_duty(light, duty);
-            vTaskDelay(pdMS_TO_TICKS(20));
+
+            vTaskDelay(pdMS_TO_TICKS((int)(20 / light->speed_multiplier)));
         }
         for (int i = steps; i >= 0 && !light->stop_flag; i--)
         {
-            int duty = duty_in_range(light, (float)i / steps); // i 在 0~steps，归一化到 0~1
-
+            float norm = fmodf((float)i / steps + light->phase, 1.0f);
+            int duty = duty_in_range(light, norm);
             set_duty(light, duty);
-            vTaskDelay(pdMS_TO_TICKS(20));
+
+            vTaskDelay(pdMS_TO_TICKS((int)(20 / light->speed_multiplier)));
         }
     }
     set_duty(light, 0);
@@ -169,25 +180,25 @@ static void fade_task(void *param)
 }
 
 // ----------------- 启动接口 -----------------
-void cob_light_breath(cob_light_t *light, int period_ms)
+void cob_light_breath(cob_light_t *light)
 {
     cob_light_off(light);
     xTaskCreate(breath_task, "breath", 2048, light, 5, &light->task);
 }
 
-void cob_light_wave(cob_light_t *light, int period_ms)
+void cob_light_wave(cob_light_t *light)
 {
     cob_light_off(light);
     xTaskCreate(wave_task, "wave", 2048, light, 5, &light->task);
 }
 
-void cob_light_fire(cob_light_t *light, int period_ms)
+void cob_light_fire(cob_light_t *light)
 {
     cob_light_off(light);
     xTaskCreate(fire_task, "fire", 2048, light, 5, &light->task);
 }
 
-void cob_light_fade(cob_light_t *light, int fade_ms)
+void cob_light_fade(cob_light_t *light)
 {
     cob_light_off(light);
     xTaskCreate(fade_task, "fade", 2048, light, 5, &light->task);

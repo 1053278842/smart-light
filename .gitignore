@@ -2,3 +2,4 @@
 .vscode
 build
 components/mqtt_ssl/mqtt_ssl_config.h
+components/mqtt_ssl/ca.crt

@@ -43,14 +43,26 @@ void handle_blink(const char *payload)
             cJSON *type = cJSON_GetObjectItem(item, "type");
             cJSON *minduty = cJSON_GetObjectItem(item, "minduty");
             cJSON *maxduty = cJSON_GetObjectItem(item, "maxduty");
+            cJSON *phase = cJSON_GetObjectItem(item, "phase");
+            cJSON *speed = cJSON_GetObjectItem(item, "speed");
+            float phase_val = 0.0f; // 默认值
+            if (phase && cJSON_IsNumber(phase))
+            {
+                phase_val = (float)(phase->valuedouble); // 不管是整数还是小数，都用 valuedouble
+            }
+            float speed_val = 1.0f; // 默认值
+            if (speed && cJSON_IsNumber(speed))
+            {
+                speed_val = (float)(speed->valuedouble);
+            }
 
-            printf("设备 %d: id=%d, status=%s, type=%s, minduty=%d, maxduty=%d\n",
+            printf("设备 %d: id=%d, status=%s, type=%s, minduty=%d, maxduty=%d, phase=%f,speed_multiplier =%f\n",
                    i,
                    id ? id->valueint : -1,
                    (cJSON_IsTrue(status) ? "true" : "false"),
                    (cJSON_IsString(type) ? type->valuestring : "null"),
                    minduty ? minduty->valueint : -1,
-                   maxduty ? maxduty->valueint : -1);
+                   maxduty ? maxduty->valueint : -1, phase_val, speed_val);
             if (!id)
             {
                 printf("为传递id");
@@ -60,9 +72,20 @@ void handle_blink(const char *payload)
             {
                 if (cJSON_IsString(type) && type->valuestring)
                 {
+                    // 设置参数
                     if (minduty && maxduty)
                     {
                         light_manager_set_duty_range(id ? id->valueint : -1, minduty->valueint, maxduty->valueint);
+                    }
+                    // 动画时间相位
+                    if (phase)
+                    {
+                        light_manager_set_phase_range(id ? id->valueint : -1, phase_val);
+                    }
+                    // 动画速率
+                    if (speed)
+                    {
+                        light_manager_set_speed_multiplier(id ? id->valueint : -1, speed_val);
                     }
                     light_manager_control(id ? id->valueint : -1, type->valuestring);
                 }
