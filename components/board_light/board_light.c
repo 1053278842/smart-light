@@ -1,6 +1,8 @@
 #include "board_light.h"
 static TaskHandle_t s_blink_task_handle = NULL;
 static uint8_t s_led_state = 0;
+static int s_blink_interval = 0;
+
 void board_light_init(void)
 {
     // 配置 GPIO 作为输出
@@ -36,9 +38,8 @@ void board_light_on(void)
 // 闪烁任务
 static void board_light_blink_task(void *param)
 {
-    int delay_ms = *(int *)param;
-    free(param); // 释放传入的参数内存
-    
+    int delay_ms = s_blink_interval;
+
     while (1)
     {
         gpio_set_level(BLINK_GPIO, 1);
@@ -57,7 +58,6 @@ void board_light_blink(int blink_interval_ms)
         s_blink_task_handle = NULL;
     }
 
-    int *interval = malloc(sizeof(int));
-    *interval = blink_interval_ms;
-    xTaskCreate(board_light_blink_task, "led_blink", 2048, interval, 5, &s_blink_task_handle);
+    s_blink_interval = blink_interval_ms;
+    xTaskCreate(board_light_blink_task, "led_blink", 2048, NULL, 5, &s_blink_task_handle);
 }

@@ -25,6 +25,7 @@
 #include "sdkconfig.h"
 #include "board_light.h"
 #include "mqtt_ssl_config.h"
+#include "light_manager.h"
 
 void start_mqtt_ssl(void);
 void stop_mqtt_ssl(void);

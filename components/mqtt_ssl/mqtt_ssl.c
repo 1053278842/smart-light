@@ -20,22 +20,62 @@ void handle_blink(const char *payload)
         return;
     }
 
-    // 获取 "status" 字段
-    cJSON *status = cJSON_GetObjectItem(root, "status");
-    if (cJSON_IsBool(status))
+    // freelog 字段
+    cJSON *freelog = cJSON_GetObjectItem(root, "freelog");
+    if (cJSON_IsBool(freelog))
     {
-        if (cJSON_IsTrue(status))
+        printf("freelog = %s\n", cJSON_IsTrue(freelog) ? "true" : "false");
+    }
+
+    // device 数组
+    cJSON *devices = cJSON_GetObjectItem(root, "device");
+    if (cJSON_IsArray(devices))
+    {
+        int size = cJSON_GetArraySize(devices);
+        for (int i = 0; i < size; i++)
         {
-            board_light_blink(200);
-        }
-        else
-        {
-            board_light_off();
+            cJSON *item = cJSON_GetArrayItem(devices, i);
+            if (!item)
+                continue;
+
+            cJSON *id = cJSON_GetObjectItem(item, "id");
+            cJSON *status = cJSON_GetObjectItem(item, "status");
+            cJSON *type = cJSON_GetObjectItem(item, "type");
+            cJSON *minduty = cJSON_GetObjectItem(item, "minduty");
+            cJSON *maxduty = cJSON_GetObjectItem(item, "maxduty");
+
+            printf("设备 %d: id=%d, status=%s, type=%s, minduty=%d, maxduty=%d\n",
+                   i,
+                   id ? id->valueint : -1,
+                   (cJSON_IsTrue(status) ? "true" : "false"),
+                   (cJSON_IsString(type) ? type->valuestring : "null"),
+                   minduty ? minduty->valueint : -1,
+                   maxduty ? maxduty->valueint : -1);
+            if (!id)
+            {
+                printf("为传递id");
+                continue;
+            }
+            if (cJSON_IsTrue(status))
+            {
+                if (cJSON_IsString(type) && type->valuestring)
+                {
+                    if (minduty && maxduty)
+                    {
+                        light_manager_set_duty_range(id ? id->valueint : -1, minduty->valueint, maxduty->valueint);
+                    }
+                    light_manager_control(id ? id->valueint : -1, type->valuestring);
+                }
+            }
+            else
+            {
+                light_manager_control(id ? id->valueint : -1, "off");
+            }
         }
     }
     else
     {
-        printf("字段不存在或不是布尔类型\n");
+        printf("device 字段不存在或不是数组\n");
     }
 
     // 释放内存
@@ -94,6 +134,8 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         msg_id = esp_mqtt_client_subscribe(client, "/ll/washroom/light/light001/down/control", 0);
         // 板载灯
         msg_id = esp_mqtt_client_subscribe(client, "/ll/washroom/light/light001/down/blink", 0);
+
+        // led_init(); // 确保 PWM 初始化
         ESP_LOGI(MQTT_SSL_TAG, "sent subscribe successful, msg_id=%d", msg_id);
 
         break;
