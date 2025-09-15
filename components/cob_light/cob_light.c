@@ -98,17 +98,21 @@ static void breath_task(void *param)
     cob_light_t *light = (cob_light_t *)param;
     light->stop_flag = false;
     float t = 0;
-    float speed = 0.05f; // 小 = 慢，大 = 快
+    float speed = 0.005f; // 小 = 慢，大 = 快
     while (!light->stop_flag)
     {
         float norm = (sin(t + light->phase) + 1) / 2;
-        int duty = duty_in_range(light, norm); // 归一化到 0~1
+
+        float gamma = 2.2f;
+        float corrected = powf(norm, gamma); // gamma校正后的亮度比例
+
+        int duty = duty_in_range(light, corrected); // 归一化到 0~1
         set_duty(light, duty);
         float step = speed * light->speed_multiplier;
-        if (norm > 0.95f || norm < 0.05f)
-            step *= 0.2f; // 峰值区域慢
+        // if (norm > 0.95f || norm < 0.05f)
+        //     step *= 0.2f; // 峰值区域慢
         t += step;
-        vTaskDelay(pdMS_TO_TICKS(20));
+        vTaskDelay(pdMS_TO_TICKS(15));
     }
     set_duty(light, 0);
     vTaskDelete(NULL);
@@ -123,11 +127,15 @@ static void wave_task(void *param)
     while (!light->stop_flag)
     {
         float norm = (sin(t + light->phase) + sin((t + light->phase) * 1.5) + 2) / 4;
-        int duty = duty_in_range(light, norm);
+
+        float gamma = 2.2f;
+        float corrected = powf(norm, gamma); // gamma校正后的亮度比例
+
+        int duty = duty_in_range(light, corrected);
         set_duty(light, duty);
-        float step = 0.1f * light->speed_multiplier;
+        float step = 0.01f * light->speed_multiplier;
         t += step;
-        vTaskDelay(pdMS_TO_TICKS(30));
+        vTaskDelay(pdMS_TO_TICKS(15));
     }
     set_duty(light, 0);
     vTaskDelete(NULL);
@@ -155,7 +163,7 @@ static void fade_task(void *param)
 {
     cob_light_t *light = (cob_light_t *)param;
     light->stop_flag = false;
-    int steps = 50;
+    int steps = 5;
     while (!light->stop_flag)
     {
         for (int i = 0; i <= steps && !light->stop_flag; i++)
