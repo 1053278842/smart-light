@@ -49,19 +49,19 @@
       "id": 1,
       "status": true,
       "type": "wave",
-      "minduty": 10,
-      "maxduty": 20,
-      "speed": 1,
-      "phase": 0.5
+      "minduty": 1,
+      "maxduty": 50,
+      "speed": 0.5,
+      "phase": 0
     },
     {
       "id": 2,
       "status": true,
-      "type": "breath",
-      "minduty": 10,
-      "maxduty": 50,
-      "speed": 1,
-      "phase": 0.5
+      "type": "wave",
+      "minduty": 80,
+      "maxduty": 100,
+      "speed": 0.25,
+      "phase": 10
     }
   ]
 }
